@@ -1,0 +1,1 @@
+curl -d "api_user_key=ed67c1aec48d47270dd002d0baa29814&api_dev_key=bb8aa307a7d4b6073976149b65977bae&api_paste_private=2" 'https://pastebin.com/api/api_get.php'
