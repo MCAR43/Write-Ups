@@ -1,0 +1,29 @@
+- Nikto v2.1.6
+---------------------------------------------------------------------------
++ Target IP:          10.129.62.109
++ Target Hostname:    10.129.62.109
++ Target Port:        5080
++ Start Time:         2020-12-14 08:12:55 (GMT-5)
+---------------------------------------------------------------------------
++ Server: nginx
++ Uncommon header 'x-request-id' found, with contents: e1a44e91-053f-4d26-8fc7-3e694d59ce20
++ Uncommon header 'x-runtime' found, with contents: 0.011313
++ Root page / redirects to: http://10.129.62.109/users/sign_in
++ No CGI Directories found (use '-C all' to force check all possible dirs)
++ Entry '/autocomplete/users/' in robots.txt returned a non-forbidden or redirect HTTP code (200)
++ Entry '/search/' in robots.txt returned a non-forbidden or redirect HTTP code (200)
++ Entry '/help/' in robots.txt returned a non-forbidden or redirect HTTP code (200)
++ Entry '/users/sign_in/' in robots.txt returned a non-forbidden or redirect HTTP code (200)
++ "robots.txt" contains 53 entries which should be manually viewed.
++ OSVDB-630: The web server may reveal its internal or real IP in the Location header via a request to / over HTTP/1.0. The value is "172.19.0.2".
++ /help/: Help directory should not be accessible
++ OSVDB-3092: /public/: This might be interesting...
++ OSVDB-3092: /search.vts: This might be interesting...
++ OSVDB-3092: /test/: This might be interesting...
++ Uncommon header 'x-gitlab-custom-error' found, with contents: 1
++ /help.php: A help file was found.
++ /.well-known/openid-configuration: OpenID Provider Configuration Information.
++ 7972 requests: 0 error(s) and 15 item(s) reported on remote host
++ End Time:           2020-12-14 08:22:23 (GMT-5) (568 seconds)
+---------------------------------------------------------------------------
++ 1 host(s) tested

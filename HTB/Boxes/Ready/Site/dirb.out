@@ -1,0 +1,31 @@
+-----------------
+DIRB v2.22    
+By The Dark Raver
+-----------------
+
+START_TIME: Mon Dec 14 08:03:08 2020
+URL_BASE: http://10.129.62.109:5080/
+WORDLIST_FILES: /usr/share/dirb/wordlists/common.txt
+
+-----------------
+
+GENERATED WORDS: 4612                                                          
+
+---- Scanning URL: http://10.129.62.109:5080/ ----
++ http://10.129.62.109:5080/explore (CODE:200|SIZE:13346)                                                                                    
++ http://10.129.62.109:5080/favicon.ico (CODE:301|SIZE:175)                                                                                  
++ http://10.129.62.109:5080/groups (CODE:302|SIZE:106)                                                                                       
++ http://10.129.62.109:5080/help (CODE:200|SIZE:37977)                                                                                       
++ http://10.129.62.109:5080/projects (CODE:302|SIZE:99)                                                                                      
++ http://10.129.62.109:5080/public (CODE:200|SIZE:13425)                                                                                     
++ http://10.129.62.109:5080/robots.txt (CODE:200|SIZE:2095)                                                                                  
++ http://10.129.62.109:5080/root (CODE:200|SIZE:15797)                                                                                       
++ http://10.129.62.109:5080/Root (CODE:302|SIZE:96)                                                                                          
++ http://10.129.62.109:5080/search (CODE:200|SIZE:12696)                                                                                     
++ http://10.129.62.109:5080/snippets (CODE:302|SIZE:108)                                                                                     
++ http://10.129.62.109:5080/test (CODE:200|SIZE:15756)                                                                                       
+                                                                                                                                             
+-----------------
+END_TIME: Mon Dec 14 08:08:10 2020
+DOWNLOADED: 4612 - FOUND: 12
+
