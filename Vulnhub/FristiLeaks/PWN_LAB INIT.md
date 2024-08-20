@@ -46,7 +46,7 @@ ifconfig
 
 ifconfig will give us the information about all of our network interfaces that we have initialized. 
 
-![](C:\Users\mcAnderson\Documents\Intern\Vulnhub\pb0x_ova\ifconfig.png)
+![](./ifconfig.png)
 
 We know that our box is at `192.168.80.129` and the default subnet range for VMware VMnet1 is `192.168.80.0/24`.  Using this we can now locate the address of the vulnerable VM.
 
